@@ -17,7 +17,7 @@ var mainCmd = &cobra.Command{
 	Short: "TaskTracker for track your tasks",
 	Long:  "A little bit long description for TaskTracker",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Welcome to the TaskTracker CLI! User --help for usage ")
+		fmt.Println("Welcome to the TaskTracker CLI! Use --help for usage ")
 	}}
 
 var addCmd = &cobra.Command{
@@ -184,6 +184,7 @@ func init() {
 
 func main() {
 	var err error
+
 	tm, err = task_manager.NewTaskManager("tasks.json")
 	if err != nil {
 		fmt.Println("Error creating task manager:", err)

@@ -118,7 +118,7 @@ func (taskManager *TaskManager) MarkTaskAsInProgress(id int) error {
 	return nil
 }
 
-// MarkTaskAsTodo - Метод для установки статуса "TODO"
+// MarkTaskAsTodo - Метод для установки статуса Toдo
 func (taskManager *TaskManager) MarkTaskAsTodo(id int) error {
 	if !taskManager.taskStatusHelper(id, "TODO") {
 		return fmt.Errorf("task with id %d not found", id)
