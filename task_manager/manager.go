@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/TaskTrackerCLI/structures"
@@ -30,6 +31,9 @@ func NewTaskManager(filePath string) (*TaskManager, error) {
 
 // AddTask Метод добавления нового таска с данными(имя, описание)
 func (taskManager *TaskManager) AddTask(name, description string) (int, error) {
+	if strings.TrimSpace(name) == "" {
+		return 0, fmt.Errorf("task name must not be empty")
+	}
 	newTask := structures.Task{
 		TaskId:          taskManager.nextId,
 		TaskName:        name,
@@ -202,4 +206,37 @@ func (taskManager *TaskManager) LoadTasks() error {
 	}
 	taskManager.nextId = maxID + 1
 	return nil
+}
+
+// SearchTasks - Метод, позволяющий находить нужные таски по подстрокам
+func (taskManager *TaskManager) SearchTasks(query string) []structures.Task {
+	tasks := make([]structures.Task, 0, len(taskManager.Tasks))
+	for _, task := range taskManager.Tasks {
+		if strings.Contains(strings.ToLower(task.TaskName), strings.ToLower(query)) || strings.Contains(strings.ToLower(task.TaskDescription), strings.ToLower(query)) {
+			tasks = append(tasks, task)
+		}
+	}
+	if len(tasks) == 0 {
+		return tasks
+	}
+	return tasks
+
+}
+
+// CleanDoneTasks - метод для очистки тасков со статусом DONE
+func (taskManager *TaskManager) CleanDoneTasks() (int, error) {
+	var idsToDelete []int
+	for _, task := range taskManager.Tasks {
+		if task.TaskStatus == "DONE" {
+			idsToDelete = append(idsToDelete, task.TaskId)
+		}
+	}
+	for _, id := range idsToDelete {
+		delete(taskManager.Tasks, id)
+	}
+	count := len(idsToDelete)
+	if err := taskManager.SaveTasks(); err != nil {
+		return 0, fmt.Errorf("failed to save tasks: %w", err)
+	}
+	return count, nil
 }

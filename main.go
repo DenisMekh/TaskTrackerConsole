@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/TaskTrackerCLI/structures"
 	"github.com/TaskTrackerCLI/task_manager"
@@ -179,6 +181,55 @@ var listTasksCmd = &cobra.Command{
 	},
 }
 
+var searchCmd = &cobra.Command{
+	Use:   "search [query]",
+	Short: "search tasks by query",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		query := args[0]
+		tasks := tm.SearchTasks(query)
+		if len(tasks) == 0 {
+			fmt.Printf("No tasks found matching query '%s'.\n", query)
+			return
+		}
+		table := tablewriter.NewWriter(os.Stdout)
+		table.Header("ID", "Name", "Description", "Status", "Created", "Updated")
+		for _, task := range tasks {
+			tableRow := []string{strconv.Itoa(task.TaskId), task.TaskName, task.TaskDescription, task.TaskStatus, task.TaskCreatedAt, task.TaskUpdatedAt}
+			err := table.Append(tableRow)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error appending row: %v\n", err)
+			}
+		}
+		err := table.Render()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error rendering table: %v\n", err)
+		}
+	},
+}
+
+var cleanCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "clean tasks with DONE status",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(tm.ListDoneTasks()) == 0 {
+			fmt.Println("No 'DONE tasks to clean'")
+			return
+		}
+		if !ConfirmAction("Are you sure you want to delete all DONE tasks? This action is irreversible.") {
+			fmt.Println("Operation cancelled")
+			return
+		}
+		count, err := tm.CleanDoneTasks()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error cleaning tasks: %v\n", err)
+			return
+		}
+		fmt.Printf("Successfully deleted %d DONE tasks.\n", count)
+	},
+}
+
 func execute() {
 	if err := mainCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -192,6 +243,8 @@ func init() {
 	mainCmd.AddCommand(deleteCmd)
 	mainCmd.AddCommand(markTaskCmd)
 	mainCmd.AddCommand(listTasksCmd)
+	mainCmd.AddCommand(searchCmd)
+	mainCmd.AddCommand(cleanCmd)
 }
 
 func main() {
@@ -203,4 +256,12 @@ func main() {
 		os.Exit(1)
 	}
 	execute()
+}
+
+func ConfirmAction(promt string) bool {
+	fmt.Printf("%s? [y/N] ", promt)
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	input := strings.TrimSpace(scanner.Text())
+	return strings.ToLower(input) == "y"
 }
