@@ -7,6 +7,7 @@ import (
 
 	"github.com/TaskTrackerCLI/structures"
 	"github.com/TaskTrackerCLI/task_manager"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
 
@@ -160,10 +161,21 @@ var listTasksCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Error: Invalid status '%s'. Use all, done, todo, or in_progress.\n", status)
 			return
 		}
-		fmt.Printf("Listing %s tasks (Total: %d):\n", status, len(tasks))
-		for _, t := range tasks {
-			fmt.Printf("  [%d] %s (Status: %s)\n", t.TaskId, t.TaskName, t.TaskStatus)
+		table := tablewriter.NewWriter(os.Stdout)
+		table.Header("ID", "Name", "Description", "Status", "Created", "Updated")
+		for _, task := range tasks {
+			tableRow := []string{strconv.Itoa(task.TaskId), task.TaskName, task.TaskDescription, task.TaskStatus, task.TaskCreatedAt, task.TaskUpdatedAt}
+			err := table.Append(tableRow)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error appending row: %v\n", err)
+			}
 		}
+		err := table.Render()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error rendering table: %v\n", err)
+		}
+		fmt.Printf("Listing %s tasks (Total: %d):\n", status, len(tasks))
+
 	},
 }
 

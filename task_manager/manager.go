@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"time"
 
 	"github.com/TaskTrackerCLI/structures"
@@ -138,6 +139,9 @@ func (taskManager *TaskManager) filterTaskByStatus(status string) []structures.T
 			result = append(result, task)
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].TaskId < result[j].TaskId
+	})
 	return result
 }
 
