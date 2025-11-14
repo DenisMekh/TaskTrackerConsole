@@ -1,4 +1,4 @@
-# 📝 TaskTrackerCLI: A Simple Command-Line Task Manager by https://roadmap.sh/projects/task-tracker
+# 📝 TaskTrackerCLI: A Simple Command-Line Task Manager for https://roadmap.sh/projects/task-tracker
 
 **TaskTrackerCLI** is a minimalist and fast command-line tool for
 managing your tasks directly from the terminal.\
