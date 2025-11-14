@@ -101,40 +101,40 @@ var deleteCmd = &cobra.Command{
 
 var markTaskCmd = &cobra.Command{
 	Use:   "mark [task_id] [task_status]",
-	Short: "mark a task",
+	Short: "Mark a task status (TODO, IN_PROGRESS, DONE)",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		taskStatus := args[1]
 		taskID, err := strconv.Atoi(args[0])
 		if err != nil {
-			fmt.Println(err)
-		}
-		switch taskStatus {
-		case "TODO":
-			err := tm.MarkTaskAsTodo(taskID)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error marking task: %v\n", err)
-
-				return
-			}
-		case "IN_PROGRESS":
-			err := tm.MarkTaskAsInProgress(taskID)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error marking task: %v\n", err)
-
-				return
-			}
-		case "DONE":
-			err := tm.MarkTaskAsDone(taskID)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error marking task: %v\n", err)
-				return
-			}
-		default:
-			fmt.Println("Invalid task status")
+			fmt.Fprintf(os.Stderr, "Error: Invalid Task ID format: %v\n", err)
 			return
 		}
-		fmt.Printf("🏷️ Task ID %d marked as %s successfully.\n", taskID, taskStatus)
+
+		var ok bool
+
+		switch strings.ToUpper(taskStatus) {
+		case "TODO":
+			ok, err = tm.MarkTaskAsTodo(taskID)
+		case "IN_PROGRESS":
+			ok, err = tm.MarkTaskAsInProgress(taskID)
+		case "DONE":
+			ok, err = tm.MarkTaskAsDone(taskID)
+		default:
+			fmt.Fprintf(os.Stderr, "Error: Invalid task status '%s'. Must be TODO, IN_PROGRESS, or DONE.\n", taskStatus)
+			return
+		}
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error marking task ID %d: %v\n", taskID, err)
+			return
+		}
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Error: Task with ID %d not found.\n", taskID)
+			return
+		}
+
+		fmt.Printf("🏷️ Task ID %d successfully marked as %s.\n", taskID, strings.ToUpper(taskStatus))
 	},
 }
 
@@ -208,24 +208,28 @@ var searchCmd = &cobra.Command{
 	},
 }
 
+// main.go (Улучшенная версия)
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
-	Short: "clean tasks with DONE status",
+	Short: "Clean tasks with DONE status",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(tm.ListDoneTasks()) == 0 {
-			fmt.Println("No 'DONE tasks to clean'")
-			return
-		}
 		if !ConfirmAction("Are you sure you want to delete all DONE tasks? This action is irreversible.") {
 			fmt.Println("Operation cancelled")
 			return
 		}
+
 		count, err := tm.CleanDoneTasks()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error cleaning tasks: %v\n", err)
 			return
 		}
+
+		if count == 0 {
+			fmt.Println("No 'DONE' tasks to clean.")
+			return
+		}
+
 		fmt.Printf("Successfully deleted %d DONE tasks.\n", count)
 	},
 }

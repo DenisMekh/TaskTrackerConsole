@@ -54,7 +54,7 @@ func (taskManager *TaskManager) AddTask(name, description string) (int, error) {
 func (taskManager *TaskManager) DeleteTask(id int) (bool, error) {
 	_, ok := taskManager.Tasks[id]
 	if !ok {
-		return false, fmt.Errorf("task Not Found")
+		return false, nil
 	}
 	delete(taskManager.Tasks, id)
 	err := taskManager.SaveTasks()
@@ -69,17 +69,17 @@ func (taskManager *TaskManager) DeleteTask(id int) (bool, error) {
 func (taskManager *TaskManager) UpdateTask(id int, values map[string]string) (bool, error) {
 	task, ok := taskManager.Tasks[id]
 	if !ok {
-		return false, fmt.Errorf("task not found") // Возвращаем false, если таска не была найдена
+		return false, nil
 	}
-	// Обновлять имя только если оно было передано
+
 	if name, exists := values["task_name"]; exists {
 		task.TaskName = name
 	}
-	// Обновить описание только если оно было передано
+
 	if description, exists := values["task_description"]; exists {
 		task.TaskDescription = description
 	}
-	// Меняем время обновления таска
+
 	task.TaskUpdatedAt = time.Now().Format(time.RFC3339)
 	taskManager.Tasks[id] = task
 	err := taskManager.SaveTasks()
@@ -102,36 +102,36 @@ func (taskManager *TaskManager) taskStatusHelper(id int, newStatus string) bool 
 }
 
 // MarkTaskAsDone - Метод для установки статуса "DONE"
-func (taskManager *TaskManager) MarkTaskAsDone(id int) error {
+func (taskManager *TaskManager) MarkTaskAsDone(id int) (bool, error) {
 	if !taskManager.taskStatusHelper(id, "DONE") {
-		return fmt.Errorf("task with id %d not found", id)
+		return false, nil
 	}
 	if err := taskManager.SaveTasks(); err != nil {
-		return fmt.Errorf("failed to save task status change: %w", err)
+		return false, fmt.Errorf("failed to save task status change: %w", err)
 	}
-	return nil
+	return true, nil
 }
 
 // MarkTaskAsInProgress - Метод для установки статуса "IN_PROGRESS"
-func (taskManager *TaskManager) MarkTaskAsInProgress(id int) error {
+func (taskManager *TaskManager) MarkTaskAsInProgress(id int) (bool, error) {
 	if !taskManager.taskStatusHelper(id, "IN_PROGRESS") {
-		return fmt.Errorf("task with id %d not found", id)
+		return false, nil
 	}
 	if err := taskManager.SaveTasks(); err != nil {
-		return fmt.Errorf("failed to save task status change: %w", err)
+		return false, fmt.Errorf("failed to save task status change: %w", err)
 	}
-	return nil
+	return true, nil
 }
 
 // MarkTaskAsTodo - Метод для установки статуса Toдo
-func (taskManager *TaskManager) MarkTaskAsTodo(id int) error {
+func (taskManager *TaskManager) MarkTaskAsTodo(id int) (bool, error) {
 	if !taskManager.taskStatusHelper(id, "TODO") {
-		return fmt.Errorf("task with id %d not found", id)
+		return false, nil
 	}
 	if err := taskManager.SaveTasks(); err != nil {
-		return fmt.Errorf("failed to save task status change: %w", err)
+		return false, fmt.Errorf("failed to save task status change: %w", err)
 	}
-	return nil
+	return true, nil
 }
 
 func (taskManager *TaskManager) filterTaskByStatus(status string) []structures.Task {
@@ -223,7 +223,7 @@ func (taskManager *TaskManager) SearchTasks(query string) []structures.Task {
 
 }
 
-// CleanDoneTasks - метод для очистки тасков со статусом DONE
+// CleanDoneTasks - очищает таски со статусом DONE
 func (taskManager *TaskManager) CleanDoneTasks() (int, error) {
 	var idsToDelete []int
 	for _, task := range taskManager.Tasks {
@@ -231,10 +231,16 @@ func (taskManager *TaskManager) CleanDoneTasks() (int, error) {
 			idsToDelete = append(idsToDelete, task.TaskId)
 		}
 	}
+
+	count := len(idsToDelete)
+	if count == 0 {
+		return 0, nil
+	}
+
 	for _, id := range idsToDelete {
 		delete(taskManager.Tasks, id)
 	}
-	count := len(idsToDelete)
+
 	if err := taskManager.SaveTasks(); err != nil {
 		return 0, fmt.Errorf("failed to save tasks: %w", err)
 	}
